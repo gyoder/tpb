@@ -38,3 +38,7 @@ pub fn main(init: std.process.Init) !void {
 
     std.debug.print("\x1b[0;32mCopied To Pasteboard!\x1b[0m\n", .{});
 }
+
+test {
+    _ = @import("Clip.zig");
+}
