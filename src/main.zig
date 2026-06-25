@@ -11,11 +11,16 @@ pub fn main(init: std.process.Init) !void {
         std.process.exit(1);
     }
 
-    std.debug.print("\x1b[0;32mCopying the following to Pasteboard\x1b[0m\n", .{});
-
     // We want to avoid doing as many allocations as possible so having raw
     // pages with it being larger should be totally fine
     var clip = try Clip.OSC52.init(std.heap.page_allocator, init.io, std.heap.pageSize());
+    defer clip.free();
+
+    run(io, clip);
+}
+
+pub fn run(io: *std.Io, clip: anytype) !void {
+    std.debug.print("\x1b[0;32mCopying the following to Pasteboard\x1b[0m\n", .{});
 
     var buf: [4096]u8 = undefined;
     while (true) {
