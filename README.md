@@ -5,6 +5,8 @@
 TPB is a super simple, small program to "tee" into my clipboard using OSC 52
 codes.
 
+[Download Static Binaries](https://git.gae.moe/grace/tpb/releases)
+
 > Usage: `command | tpb`
 
 I was somewhat fed up with `pbcopy` eating stdout making it impossible to see
