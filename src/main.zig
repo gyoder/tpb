@@ -16,10 +16,10 @@ pub fn main(init: std.process.Init) !void {
     var clip = try Clip.OSC52.init(std.heap.page_allocator, init.io, std.heap.pageSize());
     defer clip.free();
 
-    run(io, clip);
+    try run(io, &clip);
 }
 
-pub fn run(io: *std.Io, clip: anytype) !void {
+pub fn run(io: std.Io, clip: anytype) !void {
     std.debug.print("\x1b[0;32mCopying the following to Pasteboard\x1b[0m\n", .{});
 
     var buf: [4096]u8 = undefined;
