@@ -23,6 +23,21 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
+    if (target.result.os.tag == .macos) {
+        exe.root_module.addCSourceFiles(.{
+            .files = &.{"src/Clip/NSPBBridge.m"},
+            .language = .objective_c,
+            .flags = &.{"-fobjc-arc"},
+        });
+        exe.root_module.linkFramework("Cocoa", .{});
+        tests.root_module.addCSourceFiles(.{
+            .files = &.{"src/Clip/NSPBBridge.m"},
+            .language = .objective_c,
+            .flags = &.{"-fobjc-arc"},
+        });
+        tests.root_module.linkFramework("Cocoa", .{});
+    }
+
     const test_step = b.step("test", "Run tests");
     const run_tests = b.addRunArtifact(tests);
     test_step.dependOn(&run_tests.step);
