@@ -7,42 +7,33 @@ clone:
     settings:
       tags: true
 
+variables:
+  - &zig_image 'ghcr.io/rust-cross/cargo-zigbuild:0.23'
+
 steps:
   - name: build-linux-x86_64
-    image: alpine:3.20
+    image: *zig_image
     commands:
-      - apk add --no-cache curl xz
-      - curl -sSL https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz | tar -xJ -C /usr/local
-      - ln -s /usr/local/zig-x86_64-linux-0.16.0/zig /usr/local/bin/zig
-      - zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSafe
-      - cp zig-out/bin/tpb tpb-linux-x86_64
+      - zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSafe --prefix zig-out-linux-x86_64
+      - cp zig-out-linux-x86_64/bin/tpb tpb-linux-x86_64
 
   - name: build-linux-aarch64
-    image: alpine:3.20
+    image: *zig_image
     commands:
-      - apk add --no-cache curl xz
-      - curl -sSL https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz | tar -xJ -C /usr/local
-      - ln -s /usr/local/zig-x86_64-linux-0.16.0/zig /usr/local/bin/zig
-      - zig build -Dtarget=aarch64-linux-musl -Doptimize=ReleaseSafe
-      - cp zig-out/bin/tpb tpb-linux-aarch64
+      - zig build -Dtarget=aarch64-linux-musl -Doptimize=ReleaseSafe --prefix zig-out-linux-aarch64
+      - cp zig-out-linux-aarch64/bin/tpb tpb-linux-aarch64
 
   - name: build-macos-x86_64
-    image: alpine:3.20
+    image: *zig_image
     commands:
-      - apk add --no-cache curl xz
-      - curl -sSL https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz | tar -xJ -C /usr/local
-      - ln -s /usr/local/zig-x86_64-linux-0.16.0/zig /usr/local/bin/zig
-      - zig build -Dtarget=x86_64-macos -Doptimize=ReleaseSafe
-      - cp zig-out/bin/tpb tpb-macos-x86_64
+      - zig build -Dtarget=x86_64-macos -Doptimize=ReleaseSafe --prefix zig-out-macos-x86_64 --sysroot /opt/MacOSX11.3.sdk
+      - cp zig-out-macos-x86_64/bin/tpb tpb-macos-x86_64
 
   - name: build-macos-aarch64
-    image: alpine:3.20
+    image: *zig_image
     commands:
-      - apk add --no-cache curl xz
-      - curl -sSL https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz | tar -xJ -C /usr/local
-      - ln -s /usr/local/zig-x86_64-linux-0.16.0/zig /usr/local/bin/zig
-      - zig build -Dtarget=aarch64-macos -Doptimize=ReleaseSafe
-      - cp zig-out/bin/tpb tpb-macos-aarch64
+      - zig build -Dtarget=aarch64-macos -Doptimize=ReleaseSafe --prefix zig-out-macos-aarch64 --sysroot /opt/MacOSX11.3.sdk
+      - cp zig-out-macos-aarch64/bin/tpb tpb-macos-aarch64
 
 
   - name: release

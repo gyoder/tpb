@@ -29,12 +29,20 @@ pub fn build(b: *std.Build) void {
             .language = .objective_c,
             .flags = &.{"-fobjc-arc"},
         });
-        exe.root_module.linkFramework("Cocoa", .{});
         tests.root_module.addCSourceFiles(.{
             .files = &.{"src/Clip/NSPBBridge.m"},
             .language = .objective_c,
             .flags = &.{"-fobjc-arc"},
         });
+        if (b.sysroot) |sysroot| {
+            const framework_path = b.pathJoin(&.{ sysroot, "System/Library/Frameworks" });
+            const include_path = b.pathJoin(&.{ sysroot, "usr/include" });
+            exe.root_module.addSystemFrameworkPath(.{ .cwd_relative = framework_path });
+            exe.root_module.addSystemIncludePath(.{ .cwd_relative = include_path });
+            tests.root_module.addSystemFrameworkPath(.{ .cwd_relative = framework_path });
+            tests.root_module.addSystemIncludePath(.{ .cwd_relative = include_path });
+        }
+        exe.root_module.linkFramework("Cocoa", .{});
         tests.root_module.linkFramework("Cocoa", .{});
     }
 
