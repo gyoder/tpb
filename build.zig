@@ -42,6 +42,10 @@ pub fn build(b: *std.Build) void {
     const run_tests = b.addRunArtifact(tests);
     test_step.dependOn(&run_tests.step);
 
+    const interface_step = b.step("interface", "Check interface (compile tests only)");
+    const check_interface = b.addInstallArtifact(tests, .{});
+    interface_step.dependOn(&check_interface.step);
+
     const run_step = b.step("run", "Run the app");
 
     const run_cmd = b.addRunArtifact(exe);
