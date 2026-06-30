@@ -1,5 +1,10 @@
+const std = @import("std");
+const builtin = @import("builtin");
+
 pub const OSC52 = @import("Clip/OSC52.zig");
-// pub const PBCopy = if (@import("builtin").os.tag == .macos) @import("Clip/OSC52.zig") else null;
+// Ideally we would make else be `@compileError` but that
+// messes up with the interface checking
+pub const NSPasteboard = if (builtin.target.os.tag == .macos) @import("Clip/NSPasteboard.zig") else void;
 
 // I am not sure if this is super idiomatic Zig or if this is bad practice, but
 // by ensuring that all Clip backends implement the same methods, we are able
@@ -16,8 +21,6 @@ fn assertFn(comptime T: type, comptime name: []const u8, comptime Sig: type) voi
 }
 
 test {
-    _ = @import("Clip/NSPasteBoard.zig");
-
     inline for (@typeInfo(@This()).@"struct".decls) |decl| {
         // Only grab types of structs
         const T = @field(@This(), decl.name);

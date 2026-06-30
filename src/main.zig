@@ -1,4 +1,7 @@
 const std = @import("std");
+const builtin = @import("builtin");
+
+const os = builtin.target.os.tag;
 const File = std.Io.File;
 const Clip = @import("Clip.zig");
 
@@ -13,10 +16,30 @@ pub fn main(init: std.process.Init) !void {
 
     // We want to avoid doing as many allocations as possible so having raw
     // pages with it being larger should be totally fine
-    var clip = try Clip.OSC52.init(std.heap.page_allocator, init.io, std.heap.pageSize());
-    defer clip.free();
+    const alloc = std.heap.page_allocator;
+    const size = std.heap.pageSize();
 
-    try run(io, &clip);
+    const is_ssh = init.environ_map.get("SSH_CONNECTION") != null or
+        init.environ_map.get("SSH_CLIENT") != null or
+        init.environ_map.get("SSH_TTY") != null;
+
+    // This can be cleaned up
+    if (is_ssh) {
+        var clip = try Clip.OSC52.init(alloc, io, size);
+        defer clip.free();
+        try run(io, &clip);
+    } else {
+        if (comptime os == .macos) {
+            var clip = try Clip.NSPasteboard.init(alloc, io, size);
+            defer clip.free();
+            try run(io, &clip);
+        } else {
+            // No Linux Clipboards yet
+            var clip = try Clip.OSC52.init(alloc, io, size);
+            defer clip.free();
+            try run(io, &clip);
+        }
+    }
 }
 
 pub fn run(io: std.Io, clip: anytype) !void {
