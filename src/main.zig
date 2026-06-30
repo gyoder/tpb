@@ -10,7 +10,11 @@ pub fn main(init: std.process.Init) !void {
 
     // This program should not be run interactively
     if (try File.stdin().isTty(io)) {
-        std.debug.print("This program is not meant to be run interactively. Please pipe into this program.\n", .{});
+        std.debug.print(
+            \\ This program is not meant to be run interactively.
+            \\ Please pipe into this program.
+            \\
+        , .{});
         std.process.exit(1);
     }
 
@@ -19,27 +23,29 @@ pub fn main(init: std.process.Init) !void {
     const alloc = std.heap.page_allocator;
     const size = std.heap.pageSize();
 
-    const is_ssh = init.environ_map.get("SSH_CONNECTION") != null or
+    const is_ssh =
+        init.environ_map.get("SSH_CONNECTION") != null or
         init.environ_map.get("SSH_CLIENT") != null or
         init.environ_map.get("SSH_TTY") != null;
 
-    // This can be cleaned up
     if (is_ssh) {
         var clip = try Clip.OSC52.init(alloc, io, size);
         defer clip.free();
         try run(io, &clip);
-    } else {
-        if (comptime os == .macos) {
-            var clip = try Clip.NSPasteboard.init(alloc, io, size);
-            defer clip.free();
-            try run(io, &clip);
-        } else {
-            // No Linux Clipboards yet
-            var clip = try Clip.OSC52.init(alloc, io, size);
-            defer clip.free();
-            try run(io, &clip);
-        }
+        return;
     }
+
+    if (comptime os == .macos) {
+        var clip = try Clip.NSPasteboard.init(alloc, io, size);
+        defer clip.free();
+        try run(io, &clip);
+        return;
+    }
+
+    // Fallback Clipboard
+    var clip = try Clip.OSC52.init(alloc, io, size);
+    defer clip.free();
+    try run(io, &clip);
 }
 
 pub fn run(io: std.Io, clip: anytype) !void {

@@ -3,7 +3,6 @@
 pub const OSC52 = @This();
 
 const std = @import("std");
-const Io = std.Io;
 
 alloc: std.mem.Allocator,
 io: std.Io,
@@ -13,9 +12,10 @@ base64buffer: std.ArrayList(u8),
 leftover_bytes: [3]u8,
 leftover_count: u8,
 
-const base64encoder = std.base64.Base64Encoder.init(std.base64.standard_alphabet_chars, '=');
+const base64encoder =
+    std.base64.Base64Encoder.init(std.base64.standard_alphabet_chars, '=');
 
-pub fn init(alloc: std.mem.Allocator, io: Io, buf_size: usize) !OSC52 {
+pub fn init(alloc: std.mem.Allocator, io: std.Io, buf_size: usize) !OSC52 {
     return .{
         .alloc = alloc,
         .io = io,
@@ -51,7 +51,6 @@ pub fn writeCopyBuffer(self: *OSC52, buf: []const u8) anyerror!void {
     const chunkable_length = buf.len - ((buf.len - buf_idx) % 3);
     var chunker = std.mem.window(u8, buf[buf_idx..chunkable_length], 3, 3);
     while (chunker.next()) |chunk| {
-        // var temp: [5]u8 = undefined;
         s = OSC52.base64encoder.encode(&temp, chunk);
         try self.base64buffer.appendSlice(self.alloc, s);
     }
@@ -87,7 +86,7 @@ pub fn writePasteboard(self: *OSC52) anyerror!void {
     };
 
     // Write data to stdout
-    const stdout = Io.File.stdout();
+    const stdout = std.Io.File.stdout();
     try stdout.writeStreamingAll(self.io, osc_header);
     try stdout.writeStreamingAll(self.io, self.base64buffer.items);
     try stdout.writeStreamingAll(self.io, osc_footer);
