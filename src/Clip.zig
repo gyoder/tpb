@@ -7,6 +7,8 @@ pub const OSC52 = @import("Clip/OSC52.zig");
 pub const NSPasteboard =
     if (builtin.target.os.tag == .macos) @import("Clip/NSPasteboard.zig") else void;
 
+pub const ForkOut = @import("Clip/ForkOut.zig");
+
 // I am not sure if this is super idiomatic Zig or if this is bad practice, but
 // by ensuring that all Clip backends implement the same methods, we are able
 // to use the `anytype` type and we are able to have an interface that is able
