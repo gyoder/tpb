@@ -12,6 +12,8 @@ base64buffer: std.ArrayList(u8),
 leftover_bytes: [3]u8,
 leftover_count: u8,
 
+is_tmux: bool,
+
 const base64encoder =
     std.base64.Base64Encoder.init(std.base64.standard_alphabet_chars, '=');
 
@@ -22,6 +24,7 @@ pub fn init(alloc: std.mem.Allocator, io: std.Io, buf_size: usize) !OSC52 {
         .base64buffer = try std.ArrayList(u8).initCapacity(alloc, buf_size),
         .leftover_bytes = undefined,
         .leftover_count = 0,
+        .is_tmux = false,
     };
 }
 
@@ -71,25 +74,54 @@ pub fn writePasteboard(self: *OSC52) anyerror!void {
     try self.encodeRemaining();
 
     // https://ghostty.org/docs/vt/osc/52
-    const osc_header = &[_]u8{
-        0x1b, // ESC
-        0x5d, // ']'
-        0x35, 0x32, // Code 52
-        0x3b, // ';'
-        // 0x70, // 'p' Primary Clipboard
-        0x63, // 'c' Standard Clipboard
-        0x3b, // ';'
-    };
-    const osc_footer = &[_]u8{
-        0x1b, // ESC
-        0x5c, // '\'
-    };
 
     // Write data to stdout
     const stdout = std.Io.File.stdout();
-    try stdout.writeStreamingAll(self.io, osc_header);
+    try stdout.writeStreamingAll(self.io, self.osc_header());
     try stdout.writeStreamingAll(self.io, self.base64buffer.items);
-    try stdout.writeStreamingAll(self.io, osc_footer);
+    try stdout.writeStreamingAll(self.io, self.osc_footer());
+}
+
+fn osc_header(self: *OSC52) []const u8 {
+    if (self.is_tmux) {
+        return &[_]u8{
+            0x1b, // ESC
+            'P', 't', 'm', 'u', 'x', ';', // tmux escape
+            0x1b, 0x1b, // ESC ESC
+            0x5d, // ']'
+            0x35, 0x32, // Code 52
+            0x3b, // ';'
+            // 0x70, // 'p' Primary Clipboard
+            0x63, // 'c' Standard Clipboard
+            0x3b, // ';'
+        };
+    } else {
+        return &[_]u8{
+            0x1b, // ESC
+            0x5d, // ']'
+            0x35, 0x32, // Code 52
+            0x3b, // ';'
+            // 0x70, // 'p' Primary Clipboard
+            0x63, // 'c' Standard Clipboard
+            0x3b, // ';'
+        };
+    }
+}
+
+fn osc_footer(self: *OSC52) []const u8 {
+    if (self.is_tmux) {
+        return &[_]u8{
+            0x1b, 0x1b, // ESC ESC
+            0x5c, // '\'
+            0x1b, // ESC
+            0x5c, // '\'
+        };
+    } else {
+        return &[_]u8{
+            0x1b, // ESC
+            0x5c, // '\'
+        };
+    }
 }
 
 test "basic base64 encode" {
