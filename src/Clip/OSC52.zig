@@ -12,19 +12,29 @@ base64buffer: std.ArrayList(u8),
 leftover_bytes: [3]u8,
 leftover_count: u8,
 
+/// This is to wrap the OSC buffer in the tmux passthrough sequence. This lets
+/// OSC52 clipboard requests go directly to the host instead of going to a tmux
+/// buffer.
+/// https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
+/// Since tmux v3.7, there is a `get-clipboard` option and when it is set to
+/// `request` any OSC52 query that comes to it will cause the tmux buffer to
+/// update before sending the information.
+/// https://raw.githubusercontent.com/tmux/tmux/3.7b/CHANGES
+/// This still wraps the tmux session in an escape whenever one is detected
+/// since this option is still incredibly new.
 is_tmux: bool,
 
 const base64encoder =
     std.base64.Base64Encoder.init(std.base64.standard_alphabet_chars, '=');
 
-pub fn init(alloc: std.mem.Allocator, io: std.Io, buf_size: usize) !OSC52 {
+pub fn init(alloc: std.mem.Allocator, io: std.Io, buf_size: usize, is_tmux: bool) !OSC52 {
     return .{
         .alloc = alloc,
         .io = io,
         .base64buffer = try std.ArrayList(u8).initCapacity(alloc, buf_size),
         .leftover_bytes = undefined,
         .leftover_count = 0,
-        .is_tmux = false,
+        .is_tmux = is_tmux,
     };
 }
 
@@ -125,7 +135,7 @@ fn osc_footer(self: *OSC52) []const u8 {
 }
 
 test "basic base64 encode" {
-    var osc = try OSC52.init(std.testing.allocator, std.testing.io, 1024);
+    var osc = try OSC52.init(std.testing.allocator, std.testing.io, 1024, false);
     defer osc.free();
     try osc.writeCopyBuffer("part1");
     try osc.encodeRemaining();
@@ -133,7 +143,7 @@ test "basic base64 encode" {
 }
 
 test "multi part base64 encode" {
-    var osc = try OSC52.init(std.testing.allocator, std.testing.io, 1024);
+    var osc = try OSC52.init(std.testing.allocator, std.testing.io, 1024, false);
     defer osc.free();
     try osc.writeCopyBuffer("part1");
     try osc.writeCopyBuffer("part2");
@@ -142,7 +152,7 @@ test "multi part base64 encode" {
 }
 
 test "tiny buffers base64 encode" {
-    var osc = try OSC52.init(std.testing.allocator, std.testing.io, 1024);
+    var osc = try OSC52.init(std.testing.allocator, std.testing.io, 1024, false);
     defer osc.free();
     try osc.writeCopyBuffer("part1");
     try osc.writeCopyBuffer("part2");
@@ -158,7 +168,7 @@ test "tiny buffers base64 encode" {
 }
 
 test "big buffers base64 encode" {
-    var osc = try OSC52.init(std.testing.allocator, std.testing.io, 1024);
+    var osc = try OSC52.init(std.testing.allocator, std.testing.io, 1024, false);
     defer osc.free();
     try osc.writeCopyBuffer("part1part1part1part1part1part1part1part1part1|");
     try osc.writeCopyBuffer("part2part2part2part2part2part2part2part2part2");

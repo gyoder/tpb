@@ -28,8 +28,11 @@ pub fn main(init: std.process.Init) !void {
         init.environ_map.get("SSH_CLIENT") != null or
         init.environ_map.get("SSH_TTY") != null;
 
+    const is_tmux =
+        init.environ_map.get("TMUX") != null;
+
     if (is_ssh) {
-        var clip = try Clip.OSC52.init(alloc, io, size);
+        var clip = try Clip.OSC52.init(alloc, io, size, is_tmux);
         defer clip.free();
         try run(io, &clip);
         return;
@@ -61,7 +64,7 @@ pub fn main(init: std.process.Init) !void {
     }
 
     // Fallback Clipboard
-    var clip = try Clip.OSC52.init(alloc, io, size);
+    var clip = try Clip.OSC52.init(alloc, io, size, is_tmux);
     defer clip.free();
     try run(io, &clip);
 }
