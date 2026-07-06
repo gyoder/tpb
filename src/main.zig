@@ -45,16 +45,18 @@ pub fn main(init: std.process.Init) !void {
     // I don't like this but it will stay until I review how dispatch works
     // with zig since I will probably be refactoring there
     linux: {
-        const xdg_type = init.environ_map.get("XDG_SESSION_TYPE") orelse "";
+        if (comptime os == .linux) {
+            const xdg_type = init.environ_map.get("XDG_SESSION_TYPE") orelse "";
 
-        if (std.mem.eql(u8, xdg_type, "wayland")) {
-            var clip = Clip.ForkOut.init(io, &[_][]const u8{"wl-copy"}) catch break :linux;
-            try run(io, &clip);
-            return;
-        } else if (std.mem.eql(u8, xdg_type, "x11")) {
-            var clip = Clip.ForkOut.init(io, &[_][]const u8{ "xclip", "-selection", "clipboard" }) catch break :linux;
-            try run(io, &clip);
-            return;
+            if (std.mem.eql(u8, xdg_type, "wayland")) {
+                var clip = Clip.ForkOut.init(io, &[_][]const u8{"wl-copy"}) catch break :linux;
+                try run(io, &clip);
+                return;
+            } else if (std.mem.eql(u8, xdg_type, "x11")) {
+                var clip = Clip.ForkOut.init(io, &[_][]const u8{ "xclip", "-selection", "clipboard" }) catch break :linux;
+                try run(io, &clip);
+                return;
+            }
         }
     }
 
