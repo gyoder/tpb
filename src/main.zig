@@ -8,20 +8,27 @@ const Clip = @import("Clip.zig");
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
 
-    // This program should not be run interactively
-    if (try File.stdin().isTty(io)) {
-        std.debug.print(
-            \\ This program is not meant to be run interactively.
-            \\ Please pipe into this program.
-            \\
-        , .{});
-        std.process.exit(1);
-    }
-
     // We want to avoid doing as many allocations as possible so having raw
     // pages with it being larger should be totally fine
     const alloc = std.heap.page_allocator;
     const size = std.heap.pageSize();
+
+    // This program should not be run interactively
+    const input: File = file: {
+        if (try File.stdin().isTty(io)) {
+            if (init.minimal.args.vector.len == 2) {
+                const path: []const u8 = (try init.minimal.args.toSlice(alloc))[1];
+                break :file try std.Io.Dir.openFile(std.Io.Dir.cwd(), io, path, .{});
+            }
+            std.debug.print(
+                \\ This program is not meant to be run interactively.
+                \\ Please pipe into this program or pass filename.
+                \\
+            , .{});
+            std.process.exit(1);
+        }
+        break :file File.stdin();
+    };
 
     const is_ssh =
         init.environ_map.get("SSH_CONNECTION") != null or
@@ -34,14 +41,14 @@ pub fn main(init: std.process.Init) !void {
     if (is_ssh) {
         var clip = try Clip.OSC52.init(alloc, io, size, is_tmux);
         defer clip.free();
-        try run(io, &clip);
+        try run(io, input, &clip);
         return;
     }
 
     if (comptime os == .macos) {
         var clip = try Clip.NSPasteboard.init(alloc, io, size);
         defer clip.free();
-        try run(io, &clip);
+        try run(io, input, &clip);
         return;
     }
 
@@ -53,11 +60,11 @@ pub fn main(init: std.process.Init) !void {
 
             if (std.mem.eql(u8, xdg_type, "wayland")) {
                 var clip = Clip.ForkOut.init(io, &[_][]const u8{"wl-copy"}) catch break :linux;
-                try run(io, &clip);
+                try run(io, input, &clip);
                 return;
             } else if (std.mem.eql(u8, xdg_type, "x11")) {
                 var clip = Clip.ForkOut.init(io, &[_][]const u8{ "xclip", "-selection", "clipboard" }) catch break :linux;
-                try run(io, &clip);
+                try run(io, input, &clip);
                 return;
             }
         }
@@ -66,16 +73,16 @@ pub fn main(init: std.process.Init) !void {
     // Fallback Clipboard
     var clip = try Clip.OSC52.init(alloc, io, size, is_tmux);
     defer clip.free();
-    try run(io, &clip);
+    try run(io, input, &clip);
 }
 
-pub fn run(io: std.Io, clip: anytype) !void {
+pub fn run(io: std.Io, file: File, clip: anytype) !void {
     std.debug.print("\x1b[0;32mCopying the following to Pasteboard\x1b[0m\n", .{});
 
     var buf: [4096]u8 = undefined;
     while (true) {
         // Read as much of stdin there is
-        const bytes = File.stdin().readStreaming(io, &.{&buf}) catch |err| {
+        const bytes = file.readStreaming(io, &.{&buf}) catch |err| {
             if (err == File.ReadStreamingError.EndOfStream) {
                 break;
             } else {
@@ -92,6 +99,8 @@ pub fn run(io: std.Io, clip: anytype) !void {
     try clip.writePasteboard();
 
     std.debug.print("\x1b[0;32mCopied To Pasteboard!\x1b[0m\n", .{});
+
+    file.close(io);
 }
 
 test {
