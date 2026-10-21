@@ -21,10 +21,12 @@ pkgs.stdenv.mkDerivation {
   ]
   ++ pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.makeWrapper;
 
-  zigBuildFlags = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
-    "--sysroot"
-    "${pkgs.apple-sdk}/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
-  ];
+  zigBuildFlags =
+    pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
+      "--sysroot"
+      "${pkgs.apple-sdk}/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+    ]
+    ++ [ "--release=fast" ];
 
   postFixup = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
     wrapProgram "$out/bin/tpb" \

@@ -10,8 +10,8 @@ pub fn main(init: std.process.Init) !void {
 
     // We want to avoid doing as many allocations as possible so having raw
     // pages with it being larger should be totally fine
-    const alloc = std.heap.page_allocator;
-    const size = std.heap.pageSize();
+    const alloc = init.arena.child_allocator;
+    const size = std.heap.pageSize() >> 1;
 
     // This program should not be run interactively
     const input: File = file: {
@@ -79,7 +79,7 @@ pub fn main(init: std.process.Init) !void {
 pub fn run(io: std.Io, file: File, clip: anytype) !void {
     std.debug.print("\x1b[0;32mCopying the following to Pasteboard\x1b[0m\n", .{});
 
-    var buf: [4096]u8 = undefined;
+    var buf: [1 << 15]u8 = undefined;
     while (true) {
         // Read as much of stdin there is
         const bytes = file.readStreaming(io, &.{&buf}) catch |err| {
