@@ -3,11 +3,18 @@
 > Pronounced `tee pee bee` or `tee pasteboard`
 
 TPB is a super simple, small program to "tee" into my clipboard using OSC 52
-codes.
+codes, native objc code, and linux clipboard providers.
 
 [Download Static Binaries](https://artifacts.gae.moe/grace/tpb)
 
-> Usage: `command | tpb`
+## Usage
+
+```sh
+command | tpb
+tpb path/to/file
+```
+
+---
 
 I was somewhat fed up with `pbcopy` eating stdout making it impossible to see
 the output of what I was doing without pasting it. While, yes, this could just
