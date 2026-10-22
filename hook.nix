@@ -53,7 +53,7 @@ let
     pname = "tpb-static-binaries";
     inherit version src;
 
-    nativeBuildInputs = [ pkgs.zig_0_16 ];
+    nativeBuildInputs = [ pkgs.zig_0_17 ];
 
     dontConfigure = true;
     doCheck = false;
@@ -66,9 +66,9 @@ let
       ${pkgs.lib.concatMapStrings (target: ''
         zig build \
           -Dtarget=${target} \
-          -Doptimize=ReleaseSafe \
+          -Doptimize=safe \
           --prefix zig-out/${target} \
-          ${pkgs.lib.optionalString (pkgs.lib.hasSuffix "-macos" target) ''--sysroot "${sdkRoot}"''}
+          ${pkgs.lib.optionalString (pkgs.lib.hasSuffix "-macos" target) ''-Dsdk="${sdkRoot}"''}
       '') (builtins.attrNames targets)}
       runHook postBuild
     '';

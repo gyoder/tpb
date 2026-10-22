@@ -4,7 +4,7 @@
 
 pkgs.stdenv.mkDerivation {
   pname = "tpb";
-  version = "0.1.3";
+  version = "0.1.4";
 
   src = pkgs.lib.fileset.toSource {
     root = ./.;
@@ -17,16 +17,15 @@ pkgs.stdenv.mkDerivation {
   };
 
   nativeBuildInputs = [
-    pkgs.zig_0_16
+    pkgs.zig_0_17
   ]
   ++ pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.makeWrapper;
 
   zigBuildFlags =
     pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
-      "--sysroot"
-      "${pkgs.apple-sdk}/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+      "-Dsdk=${pkgs.apple-sdk}/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
     ]
-    ++ [ "--release=fast" ];
+    ++ [ "-Doptimize=fast" ];
 
   postFixup = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
     wrapProgram "$out/bin/tpb" \

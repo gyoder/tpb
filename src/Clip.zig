@@ -24,9 +24,9 @@ fn assertFn(comptime T: type, comptime name: []const u8, comptime Sig: type) voi
 }
 
 test {
-    inline for (@typeInfo(@This()).@"struct".decls) |decl| {
+    inline for (@typeInfo(@This()).@"struct".decl_names) |decl| {
         // Only grab types of structs
-        const T = @field(@This(), decl.name);
+        const T = @field(@This(), decl);
         if (@TypeOf(T) != type) continue;
         if (@typeInfo(T) != .@"struct") continue;
 

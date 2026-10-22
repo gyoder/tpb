@@ -3,6 +3,7 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const sdk = b.option([]const u8, "sdk", "Path to the macOS SDK");
     const exe = b.addExecutable(.{
         .name = "tpb",
         .root_module = b.createModule(.{
@@ -24,6 +25,9 @@ pub fn build(b: *std.Build) void {
     });
 
     if (target.result.os.tag == .macos) {
+        exe.root_module.link_libc = true;
+        tests.root_module.link_libc = true;
+
         exe.root_module.addCSourceFiles(.{
             .files = &.{"src/Clip/NSPBBridge.m"},
             .language = .objective_c,
@@ -34,14 +38,15 @@ pub fn build(b: *std.Build) void {
             .language = .objective_c,
             .flags = &.{"-fobjc-arc"},
         });
-        if (b.sysroot) |sysroot| {
-            const framework_path = b.pathJoin(&.{ sysroot, "System/Library/Frameworks" });
-            const include_path = b.pathJoin(&.{ sysroot, "usr/include" });
-            exe.root_module.addSystemFrameworkPath(.{ .cwd_relative = framework_path });
-            exe.root_module.addSystemIncludePath(.{ .cwd_relative = include_path });
-            tests.root_module.addSystemFrameworkPath(.{ .cwd_relative = framework_path });
-            tests.root_module.addSystemIncludePath(.{ .cwd_relative = include_path });
+
+        if (sdk) |root| {
+            for ([_]*std.Build.Module{ exe.root_module, tests.root_module }) |module| {
+                module.addSystemFrameworkPath(.{ .cwd_relative = b.pathJoin(&.{ root, "System/Library/Frameworks" }) });
+                module.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{ root, "usr/include" }) });
+                module.addLibraryPath(.{ .cwd_relative = b.pathJoin(&.{ root, "usr/lib" }) });
+            }
         }
+
         exe.root_module.linkFramework("Cocoa", .{});
         tests.root_module.linkFramework("Cocoa", .{});
     }
@@ -61,7 +66,5 @@ pub fn build(b: *std.Build) void {
 
     run_cmd.step.dependOn(b.getInstallStep());
 
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
+    run_cmd.addPassthruArgs();
 }
